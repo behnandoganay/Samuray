@@ -123,7 +123,22 @@ namespace Samuray.EditorTools
         static KamaePoseTable LoadOrCreatePoseTable()
         {
             var existing = AssetDatabase.LoadAssetAtPath<KamaePoseTable>(PoseTablePath);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                // Eski surumde poz tablosunda sadece kilic konumu vardi; govde
+                // durusu (egim, ayak acikligi, kalca yuksekligi) sonradan eklendi.
+                // Eski bir asset'te bu alanlar sifir kalir ve figur yere coker -
+                // o yuzden bayat veriyi tanip tazeliyoruz.
+                if (IsStale(existing))
+                {
+                    var fresh = KamaePoseTable.CreateDefault();
+                    EditorUtility.CopySerialized(fresh, existing);
+                    EditorUtility.SetDirty(existing);
+                    AssetDatabase.SaveAssets();
+                    Debug.Log("Samuray: poz tablosu eski surumdendi, varsayilanlarla tazelendi.");
+                }
+                return existing;
+            }
 
             Directory.CreateDirectory("Assets/Settings");
             AssetDatabase.Refresh();
@@ -132,6 +147,17 @@ namespace Samuray.EditorTools
             AssetDatabase.SaveAssets();
             Debug.Log("Samuray: duruş poz tablosu olusturuldu -> " + PoseTablePath);
             return t;
+        }
+
+        /// <summary>Govde durusu alanlari doldurulmamissa tablo eski surumdendir.</summary>
+        static bool IsStale(KamaePoseTable t)
+        {
+            foreach (Kamae k in System.Enum.GetValues(typeof(Kamae)))
+            {
+                var p = t.For(k);
+                if (p == null || p.hipHeight <= 0.01f || p.stanceWidth <= 0.01f) return true;
+            }
+            return false;
         }
     }
 }
