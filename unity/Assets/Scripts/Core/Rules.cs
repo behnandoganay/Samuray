@@ -171,7 +171,7 @@ namespace Samuray.Core
         public int Cost(string key) => _costs[key];
         public int Dmg(string key) => _damage[key];
         public double Gesture(string key) => _gestures[key];
-        public BrainConfig BrainConfig(string key) => _brains[key];
+        public BrainConfig GetBrainConfig(string key) => _brains[key];
         public IEnumerable<string> BrainKeys => _brains.Keys;
     }
 }

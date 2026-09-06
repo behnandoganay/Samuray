@@ -26,7 +26,7 @@ namespace Samuray.Core
         protected Brain(string key, Rules rules)
         {
             Key = key; R = rules;
-            var cfg = rules.BrainConfig(key);
+            var cfg = rules.GetBrainConfig(key);
             Label = cfg.Label; KiMax = cfg.KiMax; Lies = cfg.Lies;
             SeesThroughFeints = cfg.SeesThroughFeints; Aggression = cfg.Aggression;
         }
