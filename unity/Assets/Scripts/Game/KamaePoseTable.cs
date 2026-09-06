@@ -33,12 +33,47 @@ namespace Samuray.Game
 
         [SerializeField] Pose[] poses;
 
+        /// <summary>Durusun pozu. Asset bos veya bayatsa yerlesik varsayilana duser.
+        ///
+        /// Bu geri dusus onemli: eski semayla serilestirilmis bir asset'te poses
+        /// dizisi bos gelebiliyor ve o zaman figur hic pozlanmiyordu - butun
+        /// parcalar varsayilan olcekte ust uste yigiliyordu. Tablo artik yalnizca
+        /// AYAR icin; dogruluk ona bagli degil.
+        /// </summary>
         public Pose For(Kamae k)
         {
             if (poses != null)
                 foreach (var p in poses)
-                    if (p.kamae == k) return p;
-            return null;
+                    if (p != null && p.kamae == k && p.hipHeight > 0.01f) return p;
+            return Builtin(k);
+        }
+
+        /// <summary>Asset'te veri yoksa kullanilan yerlesik pozlar.</summary>
+        public static Pose Builtin(Kamae k)
+        {
+            if (_builtin == null)
+            {
+                _builtin = new System.Collections.Generic.Dictionary<Kamae, Pose>();
+                foreach (var p in DefaultPoses()) _builtin[p.kamae] = p;
+            }
+            return _builtin.TryGetValue(k, out var found) ? found : _builtin[Kamae.CHUDAN];
+        }
+        static System.Collections.Generic.Dictionary<Kamae, Pose> _builtin;
+
+        /// <summary>Asset'i varsayilanlarla doldurur (bos veya bayatsa).</summary>
+        public bool EnsurePopulated()
+        {
+            bool eksik = poses == null || poses.Length == 0;
+            if (!eksik)
+                foreach (Kamae k in System.Enum.GetValues(typeof(Kamae)))
+                {
+                    bool var_ = false;
+                    foreach (var p in poses) if (p != null && p.kamae == k && p.hipHeight > 0.01f) var_ = true;
+                    if (!var_) { eksik = true; break; }
+                }
+            if (!eksik) return false;
+            poses = DefaultPoses();
+            return true;
         }
 
         /// <summary>Sahne kurucusunun kullandigi varsayilan tablo.
@@ -46,7 +81,13 @@ namespace Samuray.Game
         public static KamaePoseTable CreateDefault()
         {
             var t = CreateInstance<KamaePoseTable>();
-            t.poses = new[]
+            t.poses = DefaultPoses();
+            return t;
+        }
+
+        static Pose[] DefaultPoses()
+        {
+            return new[]
             {
                 // Kilic tepede, arkaya yatik - indirmeye hazir
                 new Pose { kamae = Kamae.JODAN,  hilt = new Vector2( 0.16f, 2.18f), tip = new Vector2(-0.58f, 2.88f),
@@ -64,7 +105,6 @@ namespace Samuray.Game
                 new Pose { kamae = Kamae.WAKI,   hilt = new Vector2(-0.12f, 1.26f), tip = new Vector2(-1.22f, 0.86f),
                            torsoLean = 12f, stanceWidth = 0.70f, hipHeight = 0.94f },
             };
-            return t;
         }
     }
 }

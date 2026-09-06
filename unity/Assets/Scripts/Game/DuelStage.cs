@@ -13,7 +13,7 @@ namespace Samuray.Game
         [SerializeField] SpriteRenderer paper, grain, ground, seal, vignette;
         [SerializeField] float groundY = -3.2f;
 
-        static Sprite _grainSprite, _vignetteSprite;
+        static Sprite _grainSprite, _vignetteSprite, _sealSprite;
 
         /// <param name="tension">0 = sakin, 1 = sure doldu. Kenarlarin kapanmasi.</param>
         public void SetTension(float tension)
@@ -33,12 +33,40 @@ namespace Samuray.Game
             for (int y = 0; y < n; y++)
                 for (int x = 0; x < n; x++)
                 {
+                    // Cok seyrek ve cok soluk: kagit dokusu olmali, benek degil.
                     float v = Random.value;
-                    t.SetPixel(x, y, new Color(0.1f, 0.09f, 0.08f, v * v * v * 0.16f));
+                    float a = v > 0.86f ? (v - 0.86f) / 0.14f * 0.055f : 0f;
+                    t.SetPixel(x, y, new Color(0.1f, 0.09f, 0.08f, a));
                 }
             t.Apply();
             _grainSprite = Sprite.Create(t, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), n);
             return _grainSprite;
+        }
+
+        /// <summary>Hanko muhru: kirmizi cerceve icinde soyut bir glif.
+        /// Onceki hali duz bir dikdortgendi ve ekranda anlamsiz pembe bir kutu
+        /// olarak duruyordu.</summary>
+        static Sprite Seal()
+        {
+            if (_sealSprite != null) return _sealSprite;
+            const int n = 64;
+            var t = new Texture2D(n, n) { name = "SamuraySeal" };
+            var red = new Color(1f, 1f, 1f, 1f);
+            var clear = new Color(1f, 1f, 1f, 0f);
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    bool border = x < 5 || x >= n - 5 || y < 5 || y >= n - 5;
+                    bool outside = x < 2 || x >= n - 2 || y < 2 || y >= n - 2;
+                    // ic glif: iki yatay, bir dikey darbe
+                    bool glyph = (y > 20 && y < 26 && x > 16 && x < 48)
+                              || (y > 38 && y < 44 && x > 16 && x < 48)
+                              || (x > 29 && x < 35 && y > 14 && y < 50);
+                    t.SetPixel(x, y, (!outside && border) || glyph ? red : clear);
+                }
+            t.Apply();
+            _sealSprite = Sprite.Create(t, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), n);
+            return _sealSprite;
         }
 
         static Sprite Vignette()
@@ -79,11 +107,11 @@ namespace Samuray.Game
             s.ground.transform.localRotation = Quaternion.Euler(0, 0, 90f);
             s.ground.transform.localScale = new Vector3(0.10f, width * 0.92f, 1f);
 
-            // hanko muhru - kosede kirmizi imza
-            s.seal = Art.Piece(go.transform, "Seal", Art.Rect(), Art.Shu, -88);
-            s.seal.color = new Color(Art.Shu.r, Art.Shu.g, Art.Shu.b, 0.75f);
-            s.seal.transform.localPosition = new Vector3(width * 0.36f, height * 0.40f, 0f);
-            s.seal.transform.localScale = new Vector3(0.42f, 0.52f, 1f);
+            // hanko muhru - kosede kucuk kirmizi imza
+            s.seal = Art.Piece(go.transform, "Seal", Seal(), Art.Shu, -88);
+            s.seal.color = new Color(Art.Shu.r, Art.Shu.g, Art.Shu.b, 0.42f);
+            s.seal.transform.localPosition = new Vector3(width * 0.38f, height * 0.41f, 0f);
+            s.seal.transform.localScale = Vector3.one * 0.36f;
 
             s.vignette = Art.Piece(go.transform, "Vignette", Vignette(), new Color(0, 0, 0, 0f), 50);
             s.vignette.transform.localScale = new Vector3(width * 1.6f, height * 1.4f, 1f);

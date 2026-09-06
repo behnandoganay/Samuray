@@ -30,8 +30,9 @@ namespace Samuray.Game
         public event System.Action<string> FoePressed;
 
         static readonly string[] FoeKeys = { "RONIN", "OGRENCI", "BLOFCU", "USTA" };
-        // Yerlesik fontta kanji glifi yok; Latin kisaltma kullaniliyor.
-        static readonly string[] KamaeShort = { "JO", "CHU", "GE", "HA", "WA" };
+        // Japonca terim yerine ne yaptigini soyleyen Turkce etiket: oyuncunun
+        // kenjutsu sozlugu ezberlemesi gerekmiyor, kilicin nerede oldugunu okuyor.
+        static readonly string[] KamaeShort = { "TEPE", "ORTA", "ALÇAK", "OMUZ", "GİZLİ" };
 
         float _flashLeft;
 

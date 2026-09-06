@@ -47,16 +47,10 @@ namespace Samuray.Game
 
         void LateUpdate()
         {
-            if (rig == null || poseTable == null) return;
-            var basePose = poseTable.For(_target);
-            if (basePose == null) return;
-
-            var goal = P.From(basePose);
+            if (rig == null) return;
+            var goal = P.From(Pose(_target));
             if (OverrideKamae.HasValue)
-            {
-                var o = poseTable.For(OverrideKamae.Value);
-                if (o != null) goal = P.Lerp(goal, P.From(o), Mathf.Clamp01(OverrideBlend));
-            }
+                goal = P.Lerp(goal, P.From(Pose(OverrideKamae.Value)), Mathf.Clamp01(OverrideBlend));
 
             float t = _ready ? 1f - Mathf.Exp(-poseLerpSpeed * Time.deltaTime) : 1f;
             _current = _ready ? P.Lerp(_current, goal, t) : goal;
@@ -74,6 +68,10 @@ namespace Samuray.Game
 
         /// <summary>Kilicin ucu, dunya uzayinda.</summary>
         public Vector3 BladeTipWorld() => rig != null ? rig.ToWorld(rig.TipLocal) : transform.position;
+
+        /// <summary>Tablo yoksa yerlesik poz. Figurun cizilmesi asset'e bagli degil.</summary>
+        KamaePoseTable.Pose Pose(Kamae k)
+            => poseTable != null ? poseTable.For(k) : KamaePoseTable.Builtin(k);
 
         public static FighterView Create(Transform parent, string name, Vector3 pos,
                                          int facing, float scale, KamaePoseTable table)

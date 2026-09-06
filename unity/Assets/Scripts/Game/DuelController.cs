@@ -222,21 +222,21 @@ namespace Samuray.Game
         /// <summary>Turun tek satirlik ozeti - ekranda kisa sure parlar sonra soner.</summary>
         string Summarize(BeatResult res)
         {
-            foreach (var e in res.Events) if (e.Contains("savurdu!")) return "SAVURULDU";
-            foreach (var e in res.Events) if (e.Contains("catisti")) return "ÇATIŞMA";
+            foreach (var e in res.Events) if (e.Contains("savurdu!")) return "savurdun";
+            foreach (var e in res.Events) if (e.Contains("catisti")) return "kılıçlar çatıştı";
 
             int toFoe = 0, toMe = 0;
-            CutLine? foeLine = null, meLine = null;
             foreach (var h in res.Hits)
             {
-                if (h.Defender == _foe.Name) { toFoe += h.Damage; foeLine = h.Line; }
-                else { toMe += h.Damage; meLine = h.Line; }
+                if (h.Defender == _foe.Name) toFoe += h.Damage;
+                else toMe += h.Damage;
             }
-            if (toFoe > 0 && toMe > 0) return "ai-uchi  " + toFoe + " / " + toMe;
-            if (toFoe > 0) return foeLine + "  " + toFoe + " yara";
-            if (toMe > 0) return "aldın:  " + meLine + "  " + toMe + " yara";
+            if (toFoe > 0 && toMe > 0) return "ikiniz de yara aldınız";
+            if (toFoe > 0) return toFoe == 1 ? "vurdun" : "derin kesik";
+            if (toMe > 0) return toMe == 1 ? "yara aldın" : "ağır yara aldın";
 
-            foreach (var e in res.Events) if (e.Contains("karsiladi")) return "karşılandı";
+            foreach (var e in res.Events) if (e.Contains("karsiladi")) return "gardına takıldı";
+            foreach (var e in res.Events) if (e.Contains("gardini kirdi")) return "gardı kırıldı";
             return "";
         }
 
@@ -250,9 +250,9 @@ namespace Samuray.Game
             string head;
             if (_me.Alive(_r) && !_foe.Alive(_r)) head = _foe.Name + " düştü";
             else if (_foe.Alive(_r) && !_me.Alive(_r)) head = "düştün";
-            else head = "ai-uchi — karşılıklı ölüm";
+            else head = "karşılıklı ölüm";
             hud?.Flash(head);
-            hud?.SetReadout(_beat + " tur");
+            hud?.SetReadout(_beat + " turda bitti");
             hud?.SetTimer(0f);
             stage?.SetTension(0f);
             Refresh();
@@ -319,9 +319,21 @@ namespace Samuray.Game
             else _pendingGuard = k == _me.Kamae ? Action.Guard() : Action.Guard(k);
             duelAudio?.PlayTick();
             hud?.SetReadout(_pendingGuard.HasValue
-                ? (_pendingGuard.Value.ToKamae.HasValue ? "duruş → " + k : "gard (+1 nefes)")
+                ? (_pendingGuard.Value.ToKamae.HasValue ? "duruş → " + KamaeAdi(k) : "gard (+1 nefes)")
                 : "hat boyunca çiz");
             Refresh();
+        }
+
+        static string KamaeAdi(Kamae k)
+        {
+            switch (k)
+            {
+                case Kamae.JODAN: return "tepe";
+                case Kamae.CHUDAN: return "orta";
+                case Kamae.GEDAN: return "alçak";
+                case Kamae.HASSO: return "omuz";
+                default: return "gizli";
+            }
         }
 
         void Refresh()
