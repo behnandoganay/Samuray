@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d36000c80050274db327a16909e95ff, type: 3}
+  m_Name: KamaePoseTable
+  m_EditorClassIdentifier: Samuray.Game::Samuray.Game.KamaePoseTable
+  poses:
+  - kamae: 0
+    hilt: {x: 0.3, y: 0.52}
+    tip: {x: -0.38, y: 1.88}
+  - kamae: 1
+    hilt: {x: 0.32, y: -0.08}
+    tip: {x: 0.05, y: 1.3}
+  - kamae: 2
+    hilt: {x: 0.32, y: -0.34}
+    tip: {x: 0.12, y: 0.46}
+  - kamae: 3
+    hilt: {x: 0.58, y: 0.28}
+    tip: {x: 0.8, y: 1.72}
+  - kamae: 4
+    hilt: {x: 0.46, y: -0.3}
+    tip: {x: 1.12, y: -1.02}
