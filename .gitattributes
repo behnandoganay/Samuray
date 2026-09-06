@@ -1,0 +1,35 @@
+# Satir sonlarini normalize et: depoda LF, calisma kopyasinda platformun kendisi.
+* text=auto
+
+*.cs   text diff=csharp
+*.py   text diff=python
+*.json text
+*.md   text
+*.html text
+*.asmdef text
+
+# Unity YAML dosyalari: satir sonu donusumu YAPILMASIN.
+# Donusum yapilirsa Unity'nin serilestirdigi dosyalarda gereksiz fark cikiyor.
+*.unity      -text
+*.prefab     -text
+*.asset      -text
+*.mat        -text
+*.anim       -text
+*.controller -text
+*.meta       -text
+*.physicMaterial2D -text
+*.physicsMaterial2D -text
+
+# Ikili varliklar
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.psd  binary
+*.ttf  binary
+*.otf  binary
+*.wav  binary
+*.mp3  binary
+*.ogg  binary
+*.fbx  binary
+*.cubemap binary
