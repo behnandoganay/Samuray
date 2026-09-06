@@ -16,10 +16,18 @@ namespace Samuray.Game
     public sealed class StrokeInput : MonoBehaviour
     {
         [Tooltip("Cizime izin verilen ekran bolgesi (viewport orani, 0-1)")]
-        [SerializeField] Rect drawArea = new Rect(0f, 0.30f, 1f, 0.70f);
+        [SerializeField] Rect drawArea = new Rect(0f, 0.22f, 1f, 0.78f);
         [SerializeField] Camera cam;
         [SerializeField] InkTrail trail;
         [SerializeField] float minPointDistance = 4f;   // piksel
+
+        [Header("Olcek referansi")]
+        [Tooltip("Cizgi uzunlugu BUNUN boyutuna gore olculur - genelde dusman.")]
+        [SerializeField] Transform focus;
+        [Tooltip("Odagin dunya yuksekligi; kare referans alan bunun 1.15 kati olur.")]
+        [SerializeField] float focusWorldHeight = 2.9f;
+        [Tooltip("Odagin merkezinin yerel yuksekligi")]
+        [SerializeField] float focusCenterY = 1.45f;
 
         readonly List<Vector2> _screen = new List<Vector2>();
         readonly List<Vector3> _world = new List<Vector3>();
@@ -93,26 +101,47 @@ namespace Samuray.Game
         /// </summary>
         Gesture Classify()
         {
-            float minX = drawArea.xMin * Screen.width;
-            float maxY = drawArea.yMax * Screen.height;
-            float w = drawArea.width * Screen.width;
-            float h = drawArea.height * Screen.height;
+            // Referans alan: odagin (dusmanin) etrafinda bir KARE. Boylece
+            // "govdeyi bastan asagi kat eden cizgi = AGIR" oluyor - esikler
+            // ekran boyutuna degil rakibin boyuna gore anlam kazaniyor.
+            float side = FocusScreenSide();
+            var center = FocusScreenCenter();
+            float minX = center.x - side * 0.5f;
+            float maxY = center.y + side * 0.5f;
 
             var pts = new List<Pt>(_screen.Count);
             foreach (var s in _screen) pts.Add(new Pt(s.x - minX, maxY - s.y));
 
-            return GestureClassifier.Classify(pts, w, h, RulesProvider.Get(),
-                                              null, selfBandOverride: 0.0);
+            // Yandan profil cercevesinde dusman SAGDA: saplama "kisa + saga".
+            return GestureClassifier.Classify(pts, side, side, RulesProvider.Get(),
+                                              null, selfBandOverride: 0.0,
+                                              thrustDirection: new Pt(1f, 0f));
+        }
+
+        float FocusScreenSide()
+        {
+            if (cam == null || focus == null) return Mathf.Min(Screen.width, Screen.height) * 0.5f;
+            var a = cam.WorldToScreenPoint(focus.TransformPoint(new Vector3(0f, 0f, 0f)));
+            var b = cam.WorldToScreenPoint(focus.TransformPoint(new Vector3(0f, focusWorldHeight, 0f)));
+            return Mathf.Max(40f, Mathf.Abs(b.y - a.y) * 1.15f);
+        }
+
+        Vector2 FocusScreenCenter()
+        {
+            if (cam == null || focus == null) return new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            var c = cam.WorldToScreenPoint(focus.TransformPoint(new Vector3(0f, focusCenterY, 0f)));
+            return new Vector2(c.x, c.y);
         }
 
         public void ClearTrail() => trail?.ClearNow();
 
-        public static StrokeInput Create(Transform parent, Camera camera, InkTrail inkTrail, Rect area)
+        public static StrokeInput Create(Transform parent, Camera camera, InkTrail inkTrail,
+                                         Rect area, Transform focusTarget)
         {
             var go = new GameObject("StrokeInput");
             go.transform.SetParent(parent, false);
             var s = go.AddComponent<StrokeInput>();
-            s.cam = camera; s.trail = inkTrail; s.drawArea = area;
+            s.cam = camera; s.trail = inkTrail; s.drawArea = area; s.focus = focusTarget;
             return s;
         }
     }

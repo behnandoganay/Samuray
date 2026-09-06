@@ -122,11 +122,16 @@ def classify(
     pts: list[Point], width: float, height: float, rules: Rules,
     kamae_slots: list[Kamae] | None = None,
     self_band_override: float | None = None,
+    thrust_direction: Point | None = None,
 ) -> Gesture:
     """self_band_override: alt seridin (durus secici) oranini ezer.
 
     Cizim yuzeyinin altinda serit YOKSA - ornegin durus secimi ayri butonlarla
     yapiliyorsa - 0 gecilir. None ise rules.json'daki deger kullanilir.
+
+    thrust_direction: saplamanin "dusmana dogru" saydigi yon (Y ASAGI uzayda).
+    Varsayilan yukari (0,-1). Yandan profil cercevesinde dusman sagdaysa (1,0)
+    gecilir. Diger dort hat bundan etkilenmez.
     """
     cfg = rules.gesture
     if len(pts) < 2:
@@ -170,9 +175,10 @@ def classify(
             else line_from_angle(aci)
         return Gesture(Action(ActionType.PARRY, line=hat), confidence=0.8, reason="kapali halka")
 
-    # 3. Kisa ve dusmana dogru (yukari): saplama
+    # 3. Kisa ve dusmana dogru: saplama
     aci = math.degrees(math.atan2(net_dy, net_dx))
-    if net <= ref * cfg("tsuki_max_length_ratio") and net_dy < 0:
+    tx, ty = thrust_direction if thrust_direction is not None else (0.0, -1.0)
+    if net <= ref * cfg("tsuki_max_length_ratio") and (net_dx * tx + net_dy * ty) > 0:
         return Gesture(
             Action(ActionType.CUT, line=Line.TSUKI), tier=Tier.FAST,
             confidence=0.75, reason="kisa ileri durtme",

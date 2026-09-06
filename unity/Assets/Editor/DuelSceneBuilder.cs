@@ -11,16 +11,22 @@ namespace Samuray.EditorTools
 {
     /// <summary>Duello sahnesini tek komutla kurar.
     ///
-    /// Neden bir menu komutu? Yapi tamamen idiomatik kaliyor - gercek
-    /// GameObject'ler, gercek bilesenler, Inspector'dan duzenlenebilir alanlar -
-    /// ama ilk kurulumdaki onlarca surukle-birak islemi otomatiklesiyor.
-    /// Sahne olustuktan sonra her seyi elle degistirebilirsin; bu kurucu
-    /// yalnizca baslangic durumunu yaratir.
+    /// Yapi tamamen idiomatik kaliyor - gercek GameObject'ler, bilesenler,
+    /// Inspector'dan duzenlenebilir alanlar - ama ilk kurulumdaki onlarca
+    /// surukle-birak otomatiklesiyor. Sahne olustuktan sonra her sey elle
+    /// degistirilebilir; bu kurucu yalnizca baslangic durumunu yaratir.
     /// </summary>
     public static class DuelSceneBuilder
     {
         const string ScenePath = "Assets/Scenes/Duello.unity";
         const string PoseTablePath = "Assets/Settings/KamaePoseTable.asset";
+
+        // Yandan profil, dikey ekran. Oyuncu solda, dusman sagda - sag taraf
+        // bas parmagin dogal eristigi yer ve cizim dusmanin govdesine yapiliyor.
+        const float OrthoSize = 6f;
+        const float GroundY = -2.6f;
+        const float FighterX = 1.7f;
+        const float FighterScale = 1.3f;
 
         [MenuItem("Samuray/Düello Sahnesini Kur")]
         public static void Build()
@@ -29,73 +35,80 @@ namespace Samuray.EditorTools
             {
                 EditorUtility.DisplayDialog("Samuray",
                     "Assets/Resources/rules.json bulunamadi.\n\n" +
-                    "Depo kokunde su komutu calistir:\n    python3 tools/sync_rules.py", "Tamam");
+                    "Depo kokunde: python3 tools/sync_rules.py", "Tamam");
                 return;
             }
-
             if (!EditorUtility.DisplayDialog("Samuray",
-                    "Yeni bir duello sahnesi kurulacak ve " + ScenePath + " olarak kaydedilecek.\n\n" +
-                    "Acik sahnedeki kaydedilmemis degisiklikler sorulacak.", "Kur", "Vazgec"))
+                    "Duello sahnesi yeniden kurulacak ve " + ScenePath + " olarak kaydedilecek.",
+                    "Kur", "Vazgec"))
                 return;
-
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var poses = LoadOrCreatePoseTable();
 
             // --- kamera ---
-            var camGo = new GameObject("Main Camera");
-            camGo.tag = "MainCamera";
+            var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
             var cam = camGo.AddComponent<Camera>();
             cam.orthographic = true;
-            cam.orthographicSize = 10f;
+            cam.orthographicSize = OrthoSize;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Art.Paper;
-            cam.transform.position = new Vector3(0f, 0f, -10f);
-            camGo.AddComponent<CameraShake>();
+            camGo.transform.position = new Vector3(0f, 0f, -10f);
+            var shake = camGo.AddComponent<CameraShake>();
 
             var root = new GameObject("Duello");
 
-            // --- savascilar ve arena ---
-            var foeView = FighterView.Create(root.transform, "Fighter (Dusman)",
-                                             new Vector3(0f, 4.6f, 0f), -1, 1.5f, poses);
+            // --- kagit ve zemin ---
+            float worldH = OrthoSize * 2f;
+            float worldW = worldH * 9f / 16f;
+            var stage = DuelStage.Create(root.transform, worldW, worldH, GroundY);
+
+            // --- savascilar: profilden karsi karsiya ---
             var meView = FighterView.Create(root.transform, "Fighter (Sen)",
-                                            new Vector3(0f, -6.2f, 0f), 1, 1.3f, poses);
-            var arena = ArenaView.Create(root.transform, new Vector3(0f, 4.6f, 0f), 3.4f);
+                new Vector3(-FighterX, GroundY, 0f), +1, FighterScale, poses);
+            var foeView = FighterView.Create(root.transform, "Fighter (Dusman)",
+                new Vector3(FighterX, GroundY, 0f), -1, FighterScale, poses);
+
+            // --- hat katmanlari ---
+            // dusmanin uzerinde: savundugu hatlar
+            var guard = LineOverlay.Create(root.transform, "GuardOverlay", foeView.Rig, false, 10);
+            // senin uzerinde: gelen darbenin hayalet izi
+            var telegraph = LineOverlay.Create(root.transform, "TelegraphOverlay", meView.Rig, true, 10);
 
             // --- cizim ---
             var trail = InkTrail.Create(root.transform);
-            // Cizim alani ekranin ust %68'i: alt kisim HUD butonlarinin.
             var input = StrokeInput.Create(root.transform, cam, trail,
-                                           new UnityEngine.Rect(0f, 0.32f, 1f, 0.68f));
+                new UnityEngine.Rect(0f, 0.25f, 1f, 0.75f), foeView.Rig.transform);
 
             // --- vurus hissi ---
             var splatter = InkSplatter.Create(root.transform);
-            var animator = BeatAnimator.Create(root.transform,
-                                               camGo.GetComponent<CameraShake>(), splatter,
-                                               3.4f, 2.2f);
+            var duelAudio = DuelAudio.Create(root.transform);
+            var animator = BeatAnimator.Create(root.transform, shake, splatter, duelAudio, meView, foeView);
 
             // --- arayuz ---
             var hud = HudView.Create(root.transform);
 
             var es = new GameObject("EventSystem");
             es.AddComponent<EventSystem>();
-            // Yeni Input System kullaniliyor: StandaloneInputModule DEGIL.
-            // Yanlisi butonlarin hic calismamasina yol acar.
+            // Yeni Input System: StandaloneInputModule DEGIL.
             es.AddComponent<InputSystemUIInputModule>();
 
-            // --- kontrolcu ve referans baglama ---
+            // --- kontrolcu ---
             var ctrlGo = new GameObject("DuelController");
             ctrlGo.transform.SetParent(root.transform, false);
             var ctrl = ctrlGo.AddComponent<DuelController>();
 
             var so = new SerializedObject(ctrl);
-            so.FindProperty("arena").objectReferenceValue = arena;
             so.FindProperty("meView").objectReferenceValue = meView;
             so.FindProperty("foeView").objectReferenceValue = foeView;
+            so.FindProperty("guardOverlay").objectReferenceValue = guard;
+            so.FindProperty("telegraphOverlay").objectReferenceValue = telegraph;
             so.FindProperty("hud").objectReferenceValue = hud;
             so.FindProperty("input").objectReferenceValue = input;
             so.FindProperty("animator").objectReferenceValue = animator;
+            so.FindProperty("stage").objectReferenceValue = stage;
+            so.FindProperty("duelAudio").objectReferenceValue = duelAudio;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             Directory.CreateDirectory("Assets/Scenes");
@@ -117,8 +130,7 @@ namespace Samuray.EditorTools
             var t = KamaePoseTable.CreateDefault();
             AssetDatabase.CreateAsset(t, PoseTablePath);
             AssetDatabase.SaveAssets();
-            Debug.Log("Samuray: duruş poz tablosu olusturuldu -> " + PoseTablePath +
-                      "   Kilic acilarini buradan ayarlayabilirsin.");
+            Debug.Log("Samuray: duruş poz tablosu olusturuldu -> " + PoseTablePath);
             return t;
         }
     }

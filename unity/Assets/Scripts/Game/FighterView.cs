@@ -3,113 +3,94 @@ using Samuray.Core;
 
 namespace Samuray.Game
 {
-    /// <summary>Bir savascinin gorunusu: siluet + kilic.
+    /// <summary>Bir savascinin gorunusu. Rig'i besler, duruslar arasinda yumusatir.
     ///
-    /// Tek isi Core'daki Fighter durumunu gostermek; hicbir kural bilgisi tutmaz.
-    /// Kilicin acisi KamaePoseTable'dan gelir ve duruslar arasinda yumusak gecer.
+    /// Hicbir kural bilgisi tutmaz; sadece Core'daki Fighter durumunu gosterir.
     /// </summary>
     public sealed class FighterView : MonoBehaviour
     {
         [SerializeField] KamaePoseTable poseTable;
-        [Tooltip("Oyuncu +1 (yukari bakar), dusman -1 (asagi bakar)")]
+        [Tooltip("+1 saga bakar (oyuncu), -1 sola bakar (dusman)")]
         [SerializeField] int facing = 1;
-        [SerializeField] float bodyScale = 1.5f;
+        [SerializeField] float bodyScale = 1.0f;
         [SerializeField] float poseLerpSpeed = 9f;
+        [SerializeField] FighterRig rig;
 
-        [SerializeField] SpriteRenderer body, head, blade, hilt;
-        [SerializeField] SpriteRenderer[] woundMarks;
+        struct P
+        {
+            public Vector2 hilt, tip;
+            public float lean, stance, hip;
+            public static P From(KamaePoseTable.Pose p) => new P
+            { hilt = p.hilt, tip = p.tip, lean = p.torsoLean, stance = p.stanceWidth, hip = p.hipHeight };
+            public static P Lerp(P a, P b, float t) => new P
+            {
+                hilt = Vector2.Lerp(a.hilt, b.hilt, t),
+                tip = Vector2.Lerp(a.tip, b.tip, t),
+                lean = Mathf.Lerp(a.lean, b.lean, t),
+                stance = Mathf.Lerp(a.stance, b.stance, t),
+                hip = Mathf.Lerp(a.hip, b.hip, t)
+            };
+        }
 
         Kamae _target = Kamae.CHUDAN;
-        Vector2 _hilt, _tip;      // su anki (yumusatilmis) kilic konumu
-        bool _snapped;
+        P _current;
+        bool _ready;
 
+        /// <summary>Animasyonun gecici olarak dayattigi poz (wind-up, savurma).
+        /// null ise durus poziyla surulur.</summary>
+        public Kamae? OverrideKamae { get; set; }
+        public float OverrideBlend { get; set; }
+
+        public FighterRig Rig => rig;
         public Kamae CurrentKamae => _target;
         public int Facing => facing;
-        public float Scale => bodyScale;
 
         void LateUpdate()
         {
-            var p = poseTable != null ? poseTable.For(_target) : null;
-            if (p == null) return;
-            float t = _snapped ? 1f : 1f - Mathf.Exp(-poseLerpSpeed * Time.deltaTime);
-            _hilt = Vector2.Lerp(_hilt, p.hilt, t);
-            _tip  = Vector2.Lerp(_tip,  p.tip,  t);
-            _snapped = false;
-            ApplyBlade();
+            if (rig == null || poseTable == null) return;
+            var basePose = poseTable.For(_target);
+            if (basePose == null) return;
+
+            var goal = P.From(basePose);
+            if (OverrideKamae.HasValue)
+            {
+                var o = poseTable.For(OverrideKamae.Value);
+                if (o != null) goal = P.Lerp(goal, P.From(o), Mathf.Clamp01(OverrideBlend));
+            }
+
+            float t = _ready ? 1f - Mathf.Exp(-poseLerpSpeed * Time.deltaTime) : 1f;
+            _current = _ready ? P.Lerp(_current, goal, t) : goal;
+            _ready = true;
+            rig.Apply(_current.hilt, _current.tip, _current.lean, _current.stance, _current.hip);
         }
 
-        /// <summary>Durusu degistir. instant=true ilk kurulumda kullanilir.</summary>
         public void SetKamae(Kamae k, bool instant = false)
         {
             _target = k;
-            if (!instant) return;
-            var p = poseTable != null ? poseTable.For(k) : null;
-            if (p == null) return;
-            _hilt = p.hilt; _tip = p.tip; _snapped = true;
-            ApplyBlade();
+            if (instant) _ready = false;
         }
 
-        public void SetWounds(int wounds)
-        {
-            if (woundMarks == null) return;
-            for (int i = 0; i < woundMarks.Length; i++)
-                if (woundMarks[i] != null) woundMarks[i].enabled = i < wounds;
-        }
+        public void SetWounds(int wounds) => rig?.SetWounds(wounds);
 
-        /// <summary>Kilicin dunya uzerindeki ucu - animasyonun hedef aldigi nokta.</summary>
-        public Vector3 BladeTipWorld()
-            => transform.TransformPoint(new Vector3(_tip.x, _tip.y * facing, 0f) * bodyScale);
+        /// <summary>Kilicin ucu, dunya uzayinda.</summary>
+        public Vector3 BladeTipWorld() => rig != null ? rig.ToWorld(rig.TipLocal) : transform.position;
 
-        void ApplyBlade()
-        {
-            if (blade == null) return;
-            Vector2 h = new Vector2(_hilt.x, _hilt.y * facing) * bodyScale;
-            Vector2 t = new Vector2(_tip.x,  _tip.y  * facing) * bodyScale;
-            Vector2 d = t - h;
-            float len = d.magnitude;
-            blade.transform.localPosition = (h + t) * 0.5f;
-            blade.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
-            blade.transform.localScale = new Vector3(len, 0.075f * bodyScale, 1f);
-            if (hilt != null)
-            {
-                hilt.transform.localPosition = h;
-                hilt.transform.localScale = Vector3.one * (0.20f * bodyScale);
-            }
-        }
-
-        /// <summary>Sahne kurucusunun cagirdigi fabrika. Govde parcalarini olusturur.</summary>
         public static FighterView Create(Transform parent, string name, Vector3 pos,
                                          int facing, float scale, KamaePoseTable table)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.transform.position = pos;
+
             var v = go.AddComponent<FighterView>();
-            v.facing = facing;
-            v.bodyScale = scale;
-            v.poseTable = table;
+            v.facing = facing; v.bodyScale = scale; v.poseTable = table;
 
-            v.body = Art.Piece(go.transform, "Body", Art.Rect(), Art.Ink, 5);
-            v.body.transform.localPosition = new Vector3(0f, -0.05f * scale, 0f);
-            v.body.transform.localScale = new Vector3(0.62f * scale, 2.15f * scale, 1f);
-
-            v.head = Art.Piece(go.transform, "Head", Art.Circle(), Art.Ink, 6);
-            v.head.transform.localPosition = new Vector3(0f, 1.30f * scale, 0f);
-            v.head.transform.localScale = Vector3.one * (0.55f * scale);
-
-            v.blade = Art.Piece(go.transform, "Blade", Art.Rect(), Art.Ink, 8);
-            v.hilt  = Art.Piece(go.transform, "Hilt",  Art.Circle(), Art.Ink, 9);
-
-            var marks = new SpriteRenderer[3];
-            for (int i = 0; i < 3; i++)
-            {
-                marks[i] = Art.Piece(go.transform, "Wound" + (i + 1), Art.Circle(), Art.Shu, 7);
-                marks[i].transform.localPosition =
-                    new Vector3((-0.16f + i * 0.18f) * scale, (0.55f - i * 0.45f) * scale, 0f);
-                marks[i].transform.localScale = Vector3.one * (0.30f * scale);
-                marks[i].enabled = false;
-            }
-            v.woundMarks = marks;
+            var rigGo = new GameObject("Rig");
+            rigGo.transform.SetParent(go.transform, false);
+            var r = rigGo.AddComponent<FighterRig>();
+            r.Configure(facing, scale);
+            r.Build();
+            v.rig = r;
 
             v.SetKamae(Kamae.CHUDAN, true);
             return v;

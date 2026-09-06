@@ -115,6 +115,11 @@ namespace Samuray.Core
             return d > 0 ? CutLine.KESA : CutLine.GYAKU_KESA;
         }
 
+        /// <param name="thrustDirection">
+        /// Saplamanin "dusmana dogru" saydigi yon (siniflandirici uzayinda, Y ASAGI).
+        /// Varsayilan yukari (0,-1). Yandan profil cercevesinde dusman sagda
+        /// oldugu icin (1,0) gecilir. Diger dort hat bu parametreden etkilenmez.
+        /// </param>
         /// <param name="selfBandOverride">
         /// Alt seridin (durus secici) oranini ezer. Cizim yuzeyinin altinda serit
         /// YOKSA - ornegin durus secimi ayri butonlarla yapiliyorsa - 0 gecilir.
@@ -122,7 +127,8 @@ namespace Samuray.Core
         /// </param>
         public static Gesture Classify(IList<Pt> pts, float width, float height, Rules r,
                                        IReadOnlyList<Kamae> kamaeSlots = null,
-                                       double? selfBandOverride = null)
+                                       double? selfBandOverride = null,
+                                       Pt? thrustDirection = null)
         {
             if (pts == null || pts.Count < 2) return new Gesture { Reason = "cizgi cok kisa" };
 
@@ -173,9 +179,11 @@ namespace Samuray.Core
                 };
             }
 
-            // 3. Kisa ve dusmana dogru (yukari): saplama
+            // 3. Kisa ve dusmana dogru: saplama
             double aci = Math.Atan2(ndy, ndx) * 180.0 / Math.PI;
-            if (net <= refLen * r.Gesture("tsuki_max_length_ratio") && ndy < 0)
+            var thrust = thrustDirection ?? new Pt(0f, -1f);
+            float thrustDot = ndx * thrust.X + ndy * thrust.Y;
+            if (net <= refLen * r.Gesture("tsuki_max_length_ratio") && thrustDot > 0f)
                 return new Gesture
                 {
                     Action = Action.Cut(CutLine.TSUKI), Tier = Core.Tier.FAST,

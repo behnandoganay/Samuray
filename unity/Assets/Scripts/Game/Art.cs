@@ -11,7 +11,7 @@ namespace Samuray.Game
     /// </summary>
     public static class Art
     {
-        static Sprite _rect, _circle;
+        static Sprite _rect, _circle, _capsule;
         static Material _lineMat;
 
         public static readonly Color Ink   = new Color(0.106f, 0.098f, 0.086f);
@@ -48,6 +48,30 @@ namespace Samuray.Game
             _circle = Sprite.Create(t, new UnityEngine.Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), n);
             _circle.name = "SamurayCircle";
             return _circle;
+        }
+
+        /// <summary>Yuvarlatilmis dikdortgen: uzuvlar cubuk gibi degil, firca
+        /// darbesi gibi gorunsun diye. Uclari yumusak.</summary>
+        public static Sprite Capsule()
+        {
+            if (_capsule != null) return _capsule;
+            const int w = 16, h = 64;
+            var t = new Texture2D(w, h) { name = "SamurayCapsule" };
+            float r = w * 0.5f;
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float dx = Mathf.Abs(x + 0.5f - r);
+                    float dy = 0f;
+                    if (y < r) dy = r - (y + 0.5f);
+                    else if (y > h - r) dy = (y + 0.5f) - (h - r);
+                    float d = Mathf.Sqrt(dx * dx + dy * dy);
+                    t.SetPixel(x, y, new Color(1, 1, 1, Mathf.Clamp01((r - d) / 1.2f)));
+                }
+            t.Apply();
+            _capsule = Sprite.Create(t, new UnityEngine.Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), h);
+            _capsule.name = "SamurayCapsule";
+            return _capsule;
         }
 
         /// <summary>LineRenderer icin materyal. SpriteRenderer'in aksine LineRenderer

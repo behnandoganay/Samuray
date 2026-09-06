@@ -86,7 +86,14 @@ Inspector'dan oynayıp duruşların nasıl göründüğünü ayarlayabilirsin.
 
 ## 8. Oyna
 
-**Play** → Ronin karşında.
+**Play** → Ronin karşında. İkiniz **profilden karşı karşıya**: sen solda, düşman sağda.
+
+Düşmanın niyeti artık yazı değil — **senin gövdende** yanıp sönen kırmızı hat,
+gelen darbenin nereye ineceğini gösteriyor. Düşmanın kendi gövdesindeki kırmızı
+hatlar ise savunduğu yerler.
+
+Kılıç açıları duruşu anlatıyor: JODAN'da tepede, CHUDAN'da uç boğazda,
+GEDAN'da alçak, HASSO'da omuzda dik, WAKI'de arkada gizli.
 
 - Üst bölgede fare/parmakla **hat boyunca çiz**
 - Kırmızı hatları düşman savunuyor
@@ -117,7 +124,13 @@ etkisini anında görürsün (Play'den çıkınca değerler sıfırlanır, beğe
 Hit-stop bilerek `Time.timeScale` ile yapılmıyor — o HUD'u ve sayacı da dondururdu.
 `BeatAnimator` kendi saatini tutuyor, donma yalnızca animasyonu etkiliyor.
 
-Kılıç açıları ayrı yerde: `Assets/Settings/KamaePoseTable.asset`.
+Duruşlar ayrı yerde: **`Assets/Settings/KamaePoseTable.asset`**. Her duruş için
+kılıcın kabza/uç konumu, gövde eğimi, ayak açıklığı ve kalça yüksekliği var.
+Kollar iki kemikli IK ile kılıcı takip ediyor — yani sadece kılıcı taşıyorsun,
+kollar kendiliğinden uzanıyor.
+
+Ses `Duello → DuelAudio` altında, tamamen kodla üretiliyor (dosya yok).
+`Muted` ile kapatılır.
 
 ---
 
