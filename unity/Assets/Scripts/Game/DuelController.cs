@@ -263,12 +263,28 @@ namespace Samuray.Game
         void OnPreview(Gesture g)
         {
             if (_phase != Phase.Plan || g.Action == null) return;
-            var a = g.Action.Value;
-            string tier = g.Tier == Tier.PARRY ? "halka"
-                        : g.Tier == Tier.FEINT ? "yarım — yalan olur"
-                        : g.Tier == Tier.HEAVY ? "ağır" : "hızlı";
-            hud?.SetReadout((a.Type == ActionType.PARRY ? "savurma  " : "") +
-                            (a.Line.HasValue ? a.Line.Value.ToString() : "") + "   " + tier);
+            hud?.SetReadout(Describe(g.Action.Value, g.Tier));
+        }
+
+        /// <summary>Jestin okunabilir ozeti - maliyeti ve BITIS DURUSU dahil.
+        ///
+        /// Bitis durusunu gostermek onemli: "kilicin bittigi yer bir sonraki
+        /// turun basladigi yerdir" oyunun temel kurali, ama oyuncuya bunu hicbir
+        /// sey soylemezse kilicin nereye gittigi keyfi gorunuyor.
+        /// </summary>
+        string Describe(Action a, Tier? tier)
+        {
+            if (a.Type == ActionType.PARRY)
+                return "savurma  " + a.Line.Value + "   " + _r.Cost("parry") + " Ki";
+
+            if (a.Type != ActionType.CUT)
+                return a.ToString();
+
+            string kademe = tier == Tier.FEINT ? "yarım — yalan olur"
+                          : tier == Tier.HEAVY ? "ağır" : "hızlı";
+            int maliyet = _r.CutCost(_me.Kamae, a.Line.Value, a.Heavy);
+            string son = KamaeAdi(_r.EndsAt(a.Line.Value));
+            return $"{a.Line.Value}  ·  {kademe}  ·  {maliyet} Ki   →   bitiş: {son}";
         }
 
         void OnGesture(Gesture g)
@@ -287,7 +303,7 @@ namespace Samuray.Game
 
             _strokes.Add(g);
             duelAudio?.PlayTick();
-            hud?.SetReadout(g.Action.Value.ToString());
+            hud?.SetReadout(Describe(g.Action.Value, g.Tier));
             Refresh();
         }
 

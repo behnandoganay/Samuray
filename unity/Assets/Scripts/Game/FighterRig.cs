@@ -27,10 +27,11 @@ namespace Samuray.Game
         [SerializeField] float shin = 0.52f;
 
         [Header("Kalinliklar")]
-        [SerializeField] float torsoWidth = 0.34f;
-        [SerializeField] float armWidth = 0.13f;
-        [SerializeField] float legWidth = 0.17f;
-        [SerializeField] float bladeWidth = 0.055f;
+        [Tooltip("Hepsi yerel birim - artik sprite boyutundan bagimsiz")]
+        [SerializeField] float torsoWidth = 0.40f;
+        [SerializeField] float armWidth = 0.15f;
+        [SerializeField] float legWidth = 0.19f;
+        [SerializeField] float bladeWidth = 0.06f;
 
         [Header("Kavrama")]
         [Tooltip("Arka elin kabzadan ne kadar geride tuttugu - iki elli kavrama")]
@@ -131,6 +132,21 @@ namespace Samuray.Game
             return root + dir * a + perp * h;
         }
 
+        /// <summary>Sprite'in olcek 1'deki dunya boyutu.
+        ///
+        /// Bu normalizasyon sart: kapsul dokusu 16x64 pikselden pixelsPerUnit=64
+        /// ile uretiliyor, yani olcek 1'de 0.25 x 1.0 birim. localScale.x'e
+        /// dogrudan genislik vermek butun uzuvlari dort kat ince yapiyordu.
+        /// Boyutu sprite'in kendisine sorunca ileride hazir sanat koydugunda da
+        /// - hangi cozunurluk ve pivot olursa olsun - dogru calisiyor.
+        /// </summary>
+        static Vector2 UnitSize(SpriteRenderer sr)
+        {
+            if (sr == null || sr.sprite == null) return Vector2.one;
+            var b = sr.sprite.bounds.size;
+            return new Vector2(b.x > 0.0001f ? b.x : 1f, b.y > 0.0001f ? b.y : 1f);
+        }
+
         void Bone(SpriteRenderer sr, Vector2 a, Vector2 b, float width)
         {
             if (sr == null) return;
@@ -138,16 +154,18 @@ namespace Samuray.Game
             var bm = new Vector2(b.x * _facing, b.y);
             var d = bm - am;
             float len = Mathf.Max(0.02f, d.magnitude);
+            var u = UnitSize(sr);
             sr.transform.localPosition = (am + bm) * 0.5f;
             sr.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg - 90f);
-            sr.transform.localScale = new Vector3(width, len, 1f);
+            sr.transform.localScale = new Vector3(width / u.x, len / u.y, 1f);
         }
 
         void Dot(SpriteRenderer sr, Vector2 p, float diameter)
         {
             if (sr == null) return;
+            var u = UnitSize(sr);
             sr.transform.localPosition = new Vector3(p.x * _facing, p.y, 0f);
-            sr.transform.localScale = Vector3.one * diameter;
+            sr.transform.localScale = new Vector3(diameter / u.x, diameter / u.y, 1f);
         }
 
         SpriteRenderer Limb(string name, int order)
@@ -189,7 +207,9 @@ namespace Samuray.Game
                 _wounds[i] = Art.Piece(transform, "Wound" + (i + 1), Art.Circle(), Art.Shu, 9);
                 _wounds[i].transform.localPosition =
                     new Vector3((-0.10f + i * 0.11f) * _facing, 1.62f - i * 0.30f, 0f);
-                _wounds[i].transform.localScale = Vector3.one * (0.24f + i * 0.04f);
+                float wd = 0.20f + i * 0.03f;
+                var wu = UnitSize(_wounds[i]);
+                _wounds[i].transform.localScale = new Vector3(wd / wu.x, wd / wu.y, 1f);
                 _wounds[i].enabled = false;
             }
             transform.localScale = Vector3.one * _scale;
