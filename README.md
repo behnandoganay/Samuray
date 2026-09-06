@@ -56,7 +56,18 @@ dokunulur; testler kuralları sınar, sayıları değil, dolayısıyla ayar test
 `balance.py` şunlara bakar: hiçbir duruşun kullanımı ezici olmamalı, beş hat da
 kullanılmalı, ortalama düello 5–12 tur sürmeli, ilk oyuncu avantajı olmamalı.
 
+## Unity
+
+C# portu `unity/` altında: çekirdek mantık, jest tanıyıcı, dört düşman arketipi ve
+testlerin tamamı. Çekirdek **UnityEngine'e hiç dokunmuyor** (asmdef'te
+`noEngineReferences`), yani Editor'süz test edilebiliyor.
+
+Kurulum ve doğrulama adımları: **[unity/README.md](unity/README.md)**
+
+`data/rules.json` tek kaynaktır; Unity kopyası `python3 tools/sync_rules.py` ile
+eşitlenir.
+
 ## Sonraki adım
 
-`Samuray.Core` C# portu — `data/rules.json` aynen kullanılır, `sim/tests/` portun
-sözleşmesidir. Ayrıntılar tasarım dokümanının 12. bölümünde.
+Unity sunum katmanı (`unity/Assets/Scripts/Game/`): girdi yakalama, fırça izleri,
+animasyon, mürekkep estetiği. Ayrıntılar tasarım dokümanının 12. bölümünde.

@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "_comment": "Tek ayar kaynagi. Hem Python motoru hem ileride C# portu bu dosyayi okur. Denge ayari kodda degil, burada yapilir.",
+  "lines": [
+    "SHOMEN",
+    "KESA",
+    "GYAKU_KESA",
+    "YOKO",
+    "TSUKI"
+  ],
+  "kamae_list": [
+    "JODAN",
+    "CHUDAN",
+    "GEDAN",
+    "HASSO",
+    "WAKI"
+  ],
+  "line_endings": {
+    "_comment": "Bir kesimin bittigi durus SADECE hatta baglidir, baslangic durusuna degil. Oyuncunun ezberleyecegi bes kural.",
+    "SHOMEN": "GEDAN",
+    "KESA": "HASSO",
+    "GYAKU_KESA": "JODAN",
+    "YOKO": "HASSO",
+    "TSUKI": "CHUDAN"
+  },
+  "kamae": {
+    "JODAN": {
+      "guards": [
+        "SHOMEN",
+        "KESA"
+      ],
+      "natural": [
+        "SHOMEN",
+        "KESA"
+      ],
+      "adjacent": [
+        "HASSO",
+        "CHUDAN"
+      ]
+    },
+    "CHUDAN": {
+      "guards": [
+        "TSUKI",
+        "SHOMEN"
+      ],
+      "natural": [
+        "TSUKI",
+        "YOKO"
+      ],
+      "adjacent": [
+        "JODAN",
+        "HASSO",
+        "GEDAN",
+        "WAKI"
+      ]
+    },
+    "GEDAN": {
+      "guards": [
+        "YOKO",
+        "GYAKU_KESA"
+      ],
+      "natural": [
+        "GYAKU_KESA",
+        "TSUKI"
+      ],
+      "adjacent": [
+        "CHUDAN",
+        "HASSO",
+        "WAKI"
+      ]
+    },
+    "HASSO": {
+      "guards": [
+        "KESA",
+        "YOKO"
+      ],
+      "natural": [
+        "KESA",
+        "YOKO"
+      ],
+      "adjacent": [
+        "JODAN",
+        "CHUDAN",
+        "GEDAN"
+      ]
+    },
+    "WAKI": {
+      "guards": [],
+      "natural": [
+        "SHOMEN",
+        "KESA",
+        "GYAKU_KESA",
+        "YOKO",
+        "TSUKI"
+      ],
+      "adjacent": [
+        "GEDAN",
+        "CHUDAN"
+      ]
+    },
+    "_comment": "Bes hat bir cember olusturur: SHOMEN-KESA-YOKO-GYAKU_KESA-TSUKI. Her durus bu cemberden FARKLI bir komsu cifti savunur, boylece hicbir durus bir digerinin kopyasi olmaz."
+  },
+  "ki": {
+    "max": 4,
+    "start": 3,
+    "regen_per_beat": 2,
+    "guard_bonus_regen": 1,
+    "max_spend_per_beat": 3
+  },
+  "costs": {
+    "cut_natural": 1,
+    "cut_forced": 2,
+    "parry": 1,
+    "feint": 1,
+    "read": 1,
+    "guard": 0,
+    "heavy_surcharge": 1,
+    "_comment": "Kesim maliyeti = konum ekseni (dogal 1 / zorlanan 2) + baglilik ekseni (agir ise +1)."
+  },
+  "damage": {
+    "fast_cut": 1,
+    "heavy_cut": 2,
+    "waki_bonus": 1,
+    "guard_break_chip": 1,
+    "suki_multiplier": 2,
+    "blocked_ki_penalty": 1,
+    "wounds_to_die": 3,
+    "guard_break_opens": true,
+    "_comment": "Iki farkli savunmasizlik var ve bilerek esit degiller. SUKI kendi hatandir (nefesin otesine gectin, catismayi kaybettin): gardin dusier VE gelen hasar iki katina cikar. ACILMA rakibin gardini agir kesimle kirmasidir: gardin duser ama hasar katlanmaz. Kendi hatan, zorlanmaktan daha pahaliya mal olur.",
+    "guard_break_ki_drain": 1
+  },
+  "injuries": {
+    "_comment": "Yaranin turu, vuran hatta gore belirlenir.",
+    "SHOMEN": "ARM",
+    "KESA": "ARM",
+    "YOKO": "LEG",
+    "GYAKU_KESA": "LEG",
+    "TSUKI": "LUNG",
+    "effects": {
+      "ARM": "Agir kesim (2 Ki) yapilamaz",
+      "LEG": "Gard eylemiyle durus degistirilemez",
+      "LUNG": "Ki yenilenmesi -1"
+    }
+  },
+  "waki": {
+    "_comment": "Gizli durus: hicbir hat savunulmaz, tum kesimler ucuz ve +1 hasar, ama turda tek eylem hakkin var ve WAKI'ye ancak bir tur gard alarak girebilirsin - dusman bunu gorur.",
+    "max_actions_per_beat": 1,
+    "unreadable": true
+  },
+  "gestures": {
+    "_comment": "Esikler referans uzunluga oranla olculur; referans = min(genislik, kesim bolgesi yuksekligi). Ekran kosegeni degil - bas parmak o boyu cizemez.",
+    "resample_points": 32,
+    "self_band_ratio": 0.32,
+    "tsuki_max_length_ratio": 0.22,
+    "feint_max_length_ratio": 0.4,
+    "heavy_min_length_ratio": 0.75,
+    "loop_turn_degrees": 270.0,
+    "loop_closure_ratio": 0.25,
+    "min_length_ratio": 0.06
+  },
+  "brains": {
+    "RONIN": {
+      "label": "Ronin",
+      "ki_max": 3,
+      "lies": false,
+      "sees_through_feints": false,
+      "aggression": 0.75
+    },
+    "OGRENCI": {
+      "label": "Ogrenci",
+      "ki_max": 4,
+      "lies": false,
+      "sees_through_feints": false,
+      "aggression": 0.55
+    },
+    "BLOFCU": {
+      "label": "Blofcu",
+      "ki_max": 4,
+      "lies": true,
+      "sees_through_feints": false,
+      "aggression": 0.7
+    },
+    "USTA": {
+      "label": "Usta",
+      "ki_max": 4,
+      "lies": true,
+      "sees_through_feints": true,
+      "aggression": 0.65
+    }
+  }
+}
