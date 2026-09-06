@@ -36,13 +36,18 @@ namespace Samuray.Game
         [Tooltip("Arka elin kabzadan ne kadar geride tuttugu - iki elli kavrama")]
         [SerializeField] float backHandOffset = 0.22f;
 
-        SpriteRenderer _torso, _head, _blade, _guard;
-        SpriteRenderer _armBackUpper, _armBackFore, _armFrontUpper, _armFrontFore;
-        SpriteRenderer _legBackThigh, _legBackShin, _legFrontThigh, _legFrontShin;
-        SpriteRenderer[] _wounds;
+        // DIKKAT: bu alanlar [SerializeField] OLMAK ZORUNDA.
+        // Parcalar sahne kurulurken (edit-time) olusturuluyor. Isaretlenmezlerse
+        // Unity referanslari kaydetmez; sahne yeniden yuklendiginde (Play'e
+        // basildiginda) hepsi null olur, Apply() her parcada erken cikar ve
+        // figur varsayilan konum/olcekte kalir - yani ekranda tek bir daire.
+        [SerializeField, HideInInspector] SpriteRenderer _torso, _head, _blade, _guard;
+        [SerializeField, HideInInspector] SpriteRenderer _armBackUpper, _armBackFore, _armFrontUpper, _armFrontFore;
+        [SerializeField, HideInInspector] SpriteRenderer _legBackThigh, _legBackShin, _legFrontThigh, _legFrontShin;
+        [SerializeField, HideInInspector] SpriteRenderer[] _wounds;
 
-        int _facing = 1;
-        float _scale = 1f;
+        [SerializeField, HideInInspector] int _facing = 1;
+        [SerializeField, HideInInspector] float _scale = 1f;
 
         /// <summary>Su anki poz - BeatAnimator ve overlay'ler buradan okur.</summary>
         public Vector2 HiltLocal { get; private set; }
@@ -150,8 +155,21 @@ namespace Samuray.Game
 
         /// <summary>Uzuvlari olusturur. Hepsi ayni murekkep rengi - siluet tek
         /// parca gibi okunuyor, sumi-e dili zaten bu.</summary>
+        void Awake()
+        {
+            // Guvenlik agi: referanslar bir sekilde kaybolduysa yeniden kur.
+            if (_torso == null) Build();
+        }
+
         public void Build()
         {
+            // Varsa eskiyi temizle - iki kez kurulursa parcalar cogalmasin.
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                var c = transform.GetChild(i).gameObject;
+                if (Application.isPlaying) Destroy(c); else DestroyImmediate(c);
+            }
+
             _legBackThigh = Limb("LegBackThigh", 1);
             _legBackShin = Limb("LegBackShin", 1);
             _armBackUpper = Limb("ArmBackUpper", 2);

@@ -23,9 +23,17 @@ namespace Samuray.Game
         [SerializeField] float telegraphWidth = 0.11f;
         [SerializeField] float pulseHz = 1.9f;
 
-        readonly Dictionary<CutLine, LineRenderer> _lines = new Dictionary<CutLine, LineRenderer>();
+        // Dictionary Unity tarafindan SERILESTIRILEMEZ. Edit-time'da doldurulup
+        // sahne yeniden yuklendiginde bosaliyordu ve hicbir hat cizilmiyordu.
+        // CutLine sirasina gore indekslenen bir dizi kullaniliyor.
+        [SerializeField, HideInInspector] LineRenderer[] _lines;
         readonly HashSet<CutLine> _marked = new HashSet<CutLine>();
         bool _anyMarked;
+
+        void Awake()
+        {
+            if (_lines == null || _lines.Length == 0 || _lines[0] == null) BuildLines(10);
+        }
 
         void LateUpdate()
         {
@@ -34,16 +42,19 @@ namespace Samuray.Game
                 ? 0.45f + 0.55f * Mathf.Abs(Mathf.Sin(Time.time * Mathf.PI * pulseHz))
                 : 1f;
 
-            foreach (var kv in _lines)
+            if (_lines == null) return;
+            for (int i = 0; i < _lines.Length; i++)
             {
-                var lr = kv.Value;
-                bool on = _marked.Contains(kv.Key);
+                var lr = _lines[i];
+                if (lr == null) continue;
+                var line = (CutLine)i;
+                bool on = _marked.Contains(line);
 
                 if (telegraphMode && !on) { lr.enabled = false; continue; }
                 lr.enabled = true;
 
                 // Hatlar rig ile birlikte hareket ettigi icin her karede tazeleniyor
-                var (a, b) = BodyLines.World(rig, kv.Key);
+                var (a, b) = BodyLines.World(rig, line);
                 lr.SetPosition(0, a);
                 lr.SetPosition(1, b);
 
@@ -66,6 +77,30 @@ namespace Samuray.Game
         }
 
         public void Clear() => Show(null);
+
+        void BuildLines(int sortingOrder)
+        {
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                var c = transform.GetChild(i).gameObject;
+                if (Application.isPlaying) Destroy(c); else DestroyImmediate(c);
+            }
+            var lines = (CutLine[])System.Enum.GetValues(typeof(CutLine));
+            _lines = new LineRenderer[lines.Length];
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var child = new GameObject(lines[i].ToString());
+                child.transform.SetParent(transform, false);
+                var lr = child.AddComponent<LineRenderer>();
+                lr.useWorldSpace = true;
+                lr.positionCount = 2;
+                lr.numCapVertices = 4;
+                lr.material = Art.LineMaterial();
+                lr.sortingOrder = sortingOrder;
+                lr.enabled = false;
+                _lines[i] = lr;
+            }
+        }
         public bool HasAny => _anyMarked;
 
         public static LineOverlay Create(Transform parent, string name, FighterRig rig,
@@ -76,20 +111,7 @@ namespace Samuray.Game
             var v = go.AddComponent<LineOverlay>();
             v.rig = rig;
             v.telegraphMode = telegraph;
-
-            foreach (CutLine line in System.Enum.GetValues(typeof(CutLine)))
-            {
-                var child = new GameObject(line.ToString());
-                child.transform.SetParent(go.transform, false);
-                var lr = child.AddComponent<LineRenderer>();
-                lr.useWorldSpace = true;
-                lr.positionCount = 2;
-                lr.numCapVertices = 4;
-                lr.material = Art.LineMaterial();
-                lr.sortingOrder = sortingOrder;
-                lr.enabled = false;
-                v._lines[line] = lr;
-            }
+            v.BuildLines(sortingOrder);
             return v;
         }
     }
