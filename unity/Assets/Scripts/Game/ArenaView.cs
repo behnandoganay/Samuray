@@ -21,10 +21,12 @@ namespace Samuray.Game
 
         /// <summary>Bir hattin dunya uzerindeki baslangic/bitis noktalari.
         /// BeatAnimator savurma animasyonunu bu segment boyunca oynatir.</summary>
-        public (Vector3 from, Vector3 to) Segment(CutLine line)
+        public (Vector3 from, Vector3 to) Segment(CutLine line) => SegmentAt(transform.position, radius, line);
+
+        /// <summary>Hattin geometrisi, herhangi bir merkez ve yaricap icin.
+        /// Dusmanin kesimleri OYUNCU etrafinda oynatildigi icin statik.</summary>
+        public static (Vector3 from, Vector3 to) SegmentAt(Vector3 c, float r, CutLine line)
         {
-            Vector3 c = transform.position;
-            float r = radius;
             switch (line)
             {
                 case CutLine.SHOMEN:     return (c + new Vector3(0f, r * 1.05f), c + new Vector3(0f, -r * 0.55f));

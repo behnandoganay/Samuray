@@ -19,12 +19,12 @@ namespace Samuray.Game
         [SerializeField] FighterView foeView;
         [SerializeField] HudView hud;
         [SerializeField] StrokeInput input;
+        [SerializeField] BeatAnimator animator;
 
         [Header("Ayarlar")]
         [SerializeField] string startingFoe = "RONIN";
         [Tooltip("Planlama suresi. 0 = sayac kapali, suresiz dusun.")]
         [SerializeField] float turnSeconds = 5f;
-        [SerializeField] float resolveSettleSeconds = 0.9f;
 
         Rules _r;
         Brain _brain;
@@ -38,7 +38,8 @@ namespace Samuray.Game
         List<Action> _foeIntent = new List<Action>();
         List<Action> _foeShown;          // null = gizli durustan okunamiyor
         Phase _phase = Phase.Plan;
-        float _timeLeft, _settle;
+        float _timeLeft;
+        BeatResult _pending;      // cozumlendi ama animasyon bitene kadar uygulanmadi
         int _beat;
         readonly List<string> _log = new List<string>();
 
@@ -78,11 +79,7 @@ namespace Samuray.Game
                     Commit();
                 }
             }
-            else if (_phase == Phase.Resolve)
-            {
-                _settle -= Time.deltaTime;
-                if (_settle <= 0f) StartPlanning();
-            }
+            // Resolve fazi BeatAnimator tarafindan surulur; burada is yok.
         }
 
         // ---------------- duello akisi ----------------
@@ -98,6 +95,8 @@ namespace Samuray.Game
             foeView?.SetKamae(_foe.Kamae, true);
             meView?.SetWounds(0); foeView?.SetWounds(0);
             input?.ClearTrail();
+            animator?.ClearEffects();
+            _pending = null;
             PlanFoe();
             StartPlanning();
             hud?.SetLog("");
@@ -138,7 +137,65 @@ namespace Samuray.Game
             var intent = CurrentIntent();
             if (_didRead) intent.Insert(0, Action.Read());
 
-            var res = BeatResolver.Resolve(_me, intent, _foe, _foeIntent, _r);
+            // Cozumleme HEMEN yapilir ama sonuc animasyon bitene kadar
+            // uygulanmaz: oyuncu darbeyi once gorsun, sonra sonucunu.
+            _pending = BeatResolver.Resolve(_me, intent, _foe, _foeIntent, _r);
+
+            _strokes.Clear(); _pendingGuard = null; _didRead = false;
+            input?.ClearTrail();
+            if (input != null) input.Enabled = false;
+            _phase = Phase.Resolve;
+            hud?.SetTimer(0f);
+            Refresh();
+
+            if (animator != null)
+                animator.Play(BuildSpec(intent, _foeIntent, _pending), OnBeatContact, OnBeatComplete);
+            else
+            {
+                OnBeatContact();
+                OnBeatComplete();
+            }
+        }
+
+        BeatAnimator.Spec BuildSpec(List<Action> mine, List<Action> theirs, BeatResult res)
+        {
+            var s = new BeatAnimator.Spec();
+            foreach (var a in mine)
+                if (a.Type == ActionType.CUT) s.Cuts.Add((a.Line.Value, a.Heavy, true));
+            foreach (var a in theirs)
+                if (a.Type == ActionType.CUT) s.Cuts.Add((a.Line.Value, a.Heavy, false));
+
+            foreach (var e in res.Events)
+            {
+                if (e.Contains("catisti")) s.Clash = true;
+                if (e.Contains("savurdu!")) s.Parried = true;
+            }
+            foreach (var h in res.Hits)
+            {
+                if (h.Defender == _foe.Name) s.DamageToFoe += h.Damage;
+                else s.DamageToMe += h.Damage;
+            }
+            s.Lethal = res.A.Wounds >= _r.WoundsToDie || res.B.Wounds >= _r.WoundsToDie;
+            s.FoePos = foeView != null ? foeView.transform.position : Vector3.zero;
+            s.MePos = meView != null ? meView.transform.position : Vector3.zero;
+            return s;
+        }
+
+        /// <summary>Temas ani: yaralar tam burada gorunur, hit-stop'la ayni karede.</summary>
+        void OnBeatContact()
+        {
+            if (_pending == null) return;
+            meView?.SetWounds(_pending.A.Wounds);
+            foeView?.SetWounds(_pending.B.Wounds);
+        }
+
+        /// <summary>Animasyon bitti: durum uygulanir, duruslar yeni acilarina gecer.</summary>
+        void OnBeatComplete()
+        {
+            if (_pending == null) return;
+            var res = _pending;
+            _pending = null;
+
             _me = res.A; _foe = res.B;
             _beat++;
 
@@ -146,10 +203,6 @@ namespace Samuray.Game
             for (int i = 0; i < res.Events.Count; i++) _log.Insert(1 + i, res.Events[i]);
             while (_log.Count > 8) _log.RemoveAt(_log.Count - 1);
             hud?.SetLog(string.Join("\n", _log));
-
-            _strokes.Clear(); _pendingGuard = null; _didRead = false;
-            input?.ClearTrail();
-            if (input != null) input.Enabled = false;
 
             meView?.SetKamae(_me.Kamae);
             foeView?.SetKamae(_foe.Kamae);
@@ -159,10 +212,7 @@ namespace Samuray.Game
             if (!_me.Alive(_r) || !_foe.Alive(_r)) { Finish(); return; }
 
             PlanFoe();
-            _phase = Phase.Resolve;
-            _settle = resolveSettleSeconds;
-            hud?.SetTimer(0f);
-            Refresh();
+            StartPlanning();
         }
 
         void Finish()

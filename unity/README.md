@@ -97,6 +97,28 @@ Inspector'dan oynayıp duruşların nasıl göründüğünü ayarlayabilirsin.
 Sayaç 5 saniye. Süre dolarsa gard alırsın, cezalandırılmazsın. Sayacı kapatmak için
 `DuelController` Inspector'ında **Turn Seconds** değerini `0` yap.
 
+## 9. Vuruş hissini ayarla
+
+Asıl soru — *vuruş tatmin edici mi* — bu değerlerde cevaplanıyor. Hierarchy'de
+`Duello → BeatAnimator` seç, Inspector'dan oyna. **Play sırasında değiştirebilirsin**,
+etkisini anında görürsün (Play'den çıkınca değerler sıfırlanır, beğendiğini not al).
+
+| Alan | Ne yapar | Başlangıç |
+|---|---|---|
+| `Windup` | Darbeden önceki geri çekilme | 0.17 sn |
+| `Strike` | Savurma süresi | 0.34 sn |
+| `Contact At` | Savurmanın kaçıncı anında temas | 0.68 |
+| `Follow` | Kılıçların durulması | 0.33 sn |
+| `Hit Stop Normal` | Normal isabette donma | 0.10 sn |
+| `Hit Stop Lethal` | Öldürücü vuruşta donma | 0.19 sn |
+| `Hit Stop Clash` | Çatışma/parry'de donma | 0.15 sn |
+| `Shake Base` / `Shake Per Wound` | Sarsıntı şiddeti | 0.28 / 0.22 |
+
+Hit-stop bilerek `Time.timeScale` ile yapılmıyor — o HUD'u ve sayacı da dondururdu.
+`BeatAnimator` kendi saatini tutuyor, donma yalnızca animasyonu etkiliyor.
+
+Kılıç açıları ayrı yerde: `Assets/Settings/KamaePoseTable.asset`.
+
 ---
 
 ## Klasör yapısı

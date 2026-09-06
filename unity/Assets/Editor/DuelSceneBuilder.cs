@@ -52,6 +52,7 @@ namespace Samuray.EditorTools
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Art.Paper;
             cam.transform.position = new Vector3(0f, 0f, -10f);
+            camGo.AddComponent<CameraShake>();
 
             var root = new GameObject("Duello");
 
@@ -67,6 +68,12 @@ namespace Samuray.EditorTools
             // Cizim alani ekranin ust %68'i: alt kisim HUD butonlarinin.
             var input = StrokeInput.Create(root.transform, cam, trail,
                                            new UnityEngine.Rect(0f, 0.32f, 1f, 0.68f));
+
+            // --- vurus hissi ---
+            var splatter = InkSplatter.Create(root.transform);
+            var animator = BeatAnimator.Create(root.transform,
+                                               camGo.GetComponent<CameraShake>(), splatter,
+                                               3.4f, 2.2f);
 
             // --- arayuz ---
             var hud = HudView.Create(root.transform);
@@ -88,6 +95,7 @@ namespace Samuray.EditorTools
             so.FindProperty("foeView").objectReferenceValue = foeView;
             so.FindProperty("hud").objectReferenceValue = hud;
             so.FindProperty("input").objectReferenceValue = input;
+            so.FindProperty("animator").objectReferenceValue = animator;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             Directory.CreateDirectory("Assets/Scenes");
