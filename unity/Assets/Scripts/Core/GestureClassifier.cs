@@ -115,12 +115,18 @@ namespace Samuray.Core
             return d > 0 ? CutLine.KESA : CutLine.GYAKU_KESA;
         }
 
+        /// <param name="selfBandOverride">
+        /// Alt seridin (durus secici) oranini ezer. Cizim yuzeyinin altinda serit
+        /// YOKSA - ornegin durus secimi ayri butonlarla yapiliyorsa - 0 gecilir.
+        /// Varsayilan null: rules.json'daki deger kullanilir.
+        /// </param>
         public static Gesture Classify(IList<Pt> pts, float width, float height, Rules r,
-                                       IReadOnlyList<Kamae> kamaeSlots = null)
+                                       IReadOnlyList<Kamae> kamaeSlots = null,
+                                       double? selfBandOverride = null)
         {
             if (pts == null || pts.Count < 2) return new Gesture { Reason = "cizgi cok kisa" };
 
-            double selfBand = r.Gesture("self_band_ratio");
+            double selfBand = selfBandOverride ?? r.Gesture("self_band_ratio");
             float refLen = ReferenceLength(width, height, selfBand);
             int n = (int)r.Gesture("resample_points");
             var s = Resample(pts, n);

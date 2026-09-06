@@ -1,8 +1,8 @@
 {
-  "name": "Samuray.Game",
-  "rootNamespace": "Samuray.Game",
-  "references": [ "Samuray.Core", "Unity.InputSystem", "UnityEngine.UI" ],
-  "includePlatforms": [],
+  "name": "Samuray.Editor",
+  "rootNamespace": "Samuray.EditorTools",
+  "references": [ "Samuray.Core", "Samuray.Game", "Unity.InputSystem", "UnityEngine.UI" ],
+  "includePlatforms": [ "Editor" ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,

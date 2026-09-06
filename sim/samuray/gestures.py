@@ -121,12 +121,18 @@ def line_from_angle(deg: float) -> Line:
 def classify(
     pts: list[Point], width: float, height: float, rules: Rules,
     kamae_slots: list[Kamae] | None = None,
+    self_band_override: float | None = None,
 ) -> Gesture:
+    """self_band_override: alt seridin (durus secici) oranini ezer.
+
+    Cizim yuzeyinin altinda serit YOKSA - ornegin durus secimi ayri butonlarla
+    yapiliyorsa - 0 gecilir. None ise rules.json'daki deger kullanilir.
+    """
     cfg = rules.gesture
     if len(pts) < 2:
         return Gesture(None, reason="cizgi cok kisa")
 
-    self_band = cfg("self_band_ratio")
+    self_band = cfg("self_band_ratio") if self_band_override is None else self_band_override
     ref = reference_length(width, height, self_band)
     n = int(cfg("resample_points"))
     ornek = resample(pts, n)

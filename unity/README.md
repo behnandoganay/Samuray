@@ -67,6 +67,36 @@ python3 tools/sync_rules.py --check   # farklıysa hata ver
 Python'dan birebir taşındığından eminsin ve bundan sonraki her hata görsel
 katmandadır. Bu, hata ayıklamayı ikiye böler.
 
+## 7. Düello sahnesini kur
+
+Testler yeşilse artık oyunu kurabilirsin. Menüden:
+
+**`Samuray → Düello Sahnesini Kur`**
+
+Bu komut sahneyi sıfırdan kurar ve `Assets/Scenes/Duello.unity` olarak kaydeder:
+kamera, iki savaşçı silueti, arena hatları, çizim yüzeyi, HUD ve `DuelController` —
+referansları da bağlanmış hâlde.
+
+> Neden menü komutu? Yapı tamamen idiomatik kalıyor (gerçek GameObject'ler, gerçek
+> bileşenler, Inspector'dan düzenlenebilir alanlar) ama ilk kurulumdaki onlarca
+> sürükle-bırak otomatikleşiyor. Sahne oluştuktan sonra her şeyi elle değiştirebilirsin.
+
+Ayrıca `Assets/Settings/KamaePoseTable.asset` oluşur — **kılıç açıları burada.**
+Inspector'dan oynayıp duruşların nasıl göründüğünü ayarlayabilirsin.
+
+## 8. Oyna
+
+**Play** → Ronin karşında.
+
+- Üst bölgede fare/parmakla **hat boyunca çiz**
+- Kırmızı hatları düşman savunuyor
+- Kısa çizgi yarım kalır (yalan), orta hızlı kesim, uzun ağır kesim
+- Alttaki duruş butonlarıyla pozisyon değiştir
+- **TURU BAŞLAT**
+
+Sayaç 5 saniye. Süre dolarsa gard alırsın, cezalandırılmazsın. Sayacı kapatmak için
+`DuelController` Inspector'ında **Turn Seconds** değerini `0` yap.
+
 ---
 
 ## Klasör yapısı
@@ -82,7 +112,18 @@ Assets/
       BeatResolver.cs           tur çözümlemesi (saf fonksiyon)
       GestureClassifier.cs      jest tanıma
       Brains.cs                 dört düşman arketipi
-    Game/                       Samuray.Game.asmdef — sunum katmanı (henüz boş)
+    Game/                       Samuray.Game.asmdef — sunum katmanı
+      DuelController.cs         faz makinesi, tur döngüsü, sayaç
+      StrokeInput.cs            çizim yakalama (YENİ Input System)
+      ArenaView.cs              beş hat + gard vurgusu
+      FighterView.cs            siluet + kılıç açısı
+      KamaePoseTable.cs         ScriptableObject: duruş → kılıç konumu
+      HudView.cs                arayüz
+      InkTrail.cs               parmağı takip eden mürekkep izi
+      Art.cs                    runtime sprite/materyal üretimi
+      RulesProvider.cs          rules.json yükleyici
+  Editor/                       Samuray.Editor.asmdef
+    DuelSceneBuilder.cs         sahneyi kuran menü komutu
   Tests/
     EditMode/                   Samuray.Tests.asmdef
       TestRules.cs              ortak kural yükleyici
